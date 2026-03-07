@@ -12,7 +12,7 @@ PROCESSED_DIR.mkdir(parents=True, exist_ok=True)
 def preprocess_ames():
 
     print("Loading Ames dataset...")
-
+ 
     ames = pd.read_csv(RAW_DIR / "ames.csv")
 
     print("Original shape:", ames.shape)
