@@ -1,8 +1,10 @@
-from rdkit import Chem
-from rdkit.Chem import Descriptors
+
 from rdkit.Chem import AllChem
 import numpy as np
 import pandas as pd
+from rdkit import Chem
+from rdkit.Chem import Descriptors
+from rdkit.Chem import rdMolDescriptors
 
 
 def compute_descriptors(smiles):
@@ -12,34 +14,30 @@ def compute_descriptors(smiles):
     if mol is None:
         return None
 
-    descriptors = {
-        "MolWt": Descriptors.MolWt(mol),
-        "LogP": Descriptors.MolLogP(mol),
-        "HBD": Descriptors.NumHDonors(mol),
-        "HBA": Descriptors.NumHAcceptors(mol),
-        "TPSA": Descriptors.TPSA(mol),
-        "NumRotatableBonds": Descriptors.NumRotatableBonds(mol)
-    }
+    desc = {}
 
+    desc["MolWt"] = Descriptors.MolWt(mol)
+    desc["LogP"] = Descriptors.MolLogP(mol)
+    desc["HBD"] = Descriptors.NumHDonors(mol)
+    desc["HBA"] = Descriptors.NumHAcceptors(mol)
+    desc["TPSA"] = Descriptors.TPSA(mol)
+    desc["RotatableBonds"] = Descriptors.NumRotatableBonds(mol)
 
-def compute_fingerprint(smiles, radius=2, n_bits=1024):
+    return desc
+def compute_fingerprint(smiles):
 
     mol = Chem.MolFromSmiles(smiles)
 
     if mol is None:
         return None
 
-    fp = AllChem.GetMorganFingerprintAsBitVect(
+    fp = rdMolDescriptors.GetMorganFingerprintAsBitVect(
         mol,
-        radius,
-        nBits=n_bits
+        radius=2,
+        nBits=1024
     )
 
-    arr = np.zeros((1,))
-    Chem.DataStructs.ConvertToNumpyArray(fp, arr)
-
-    return arr
-
+    return list(fp)
 def featurize_smiles(smiles_list):
 
     descriptor_list = []
