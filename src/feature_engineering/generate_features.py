@@ -1,13 +1,16 @@
 import pandas as pd
 from pathlib import Path
-from rdkit_features import featurize_smiles
-
+from rdkit_features import featurize_smiles, compute_descriptors, compute_fingerprint
 
 DATA_DIR = Path("data/processed")
 OUTPUT_DIR = Path("data/features")
 
 OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
 
+
+# -------------------------------
+# ESOL FEATURE GENERATION
+# -------------------------------
 def process_esol():
 
     print("Generating ESOL features...")
@@ -19,12 +22,17 @@ def process_esol():
     features = featurize_smiles(smiles)
 
     features["logS"] = df["logS"].values
+    features["SMILES"] = smiles.values
 
     features.to_csv(OUTPUT_DIR / "esol_features.csv", index=False)
 
     print("ESOL features created")
+    print("Shape:", features.shape)
 
 
+# -------------------------------
+# AMES FEATURE GENERATION
+# -------------------------------
 def process_ames():
 
     print("Generating Ames features...")
@@ -36,31 +44,72 @@ def process_ames():
     features = featurize_smiles(smiles)
 
     features["genotoxicity"] = df["genotoxicity"].values
+    features["SMILES"] = smiles.values
 
     features.to_csv(OUTPUT_DIR / "ames_features.csv", index=False)
 
     print("Ames features created")
+    print("Shape:", features.shape)
 
 
+# -------------------------------
+# TOX21 FEATURE GENERATION
+# -------------------------------
 def process_tox21():
 
     print("Generating Tox21 features...")
 
     df = pd.read_csv(DATA_DIR / "tox21_clean.csv")
 
-    smiles = df["SMILES"]
+    # find correct smiles column
+    smiles_col = "SMILES" if "SMILES" in df.columns else "smiles"
 
-    features = featurize_smiles(smiles)
+    feature_rows = []
 
-    labels = df.drop(columns=["SMILES"])
+    for _, row in df.iterrows():
 
-    features = pd.concat([features, labels], axis=1)
+        smi = row[smiles_col]
 
-    features.to_csv(OUTPUT_DIR / "tox21_features.csv", index=False)
+        if pd.isna(smi):
+            continue
 
-    print("Tox21 features created")
+        desc = compute_descriptors(smi)
+        fp = compute_fingerprint(smi)
+
+        if desc is None or fp is None:
+            continue
+
+        feature_dict = {}
+
+        # add descriptors
+        feature_dict.update(desc)
+
+        # add fingerprints
+        for i, bit in enumerate(fp):
+            feature_dict[f"fp_{i}"] = bit
+
+        # add SMILES
+        feature_dict["SMILES"] = smi
+
+        # add toxicity labels
+        for col in df.columns:
+            if col != smiles_col:
+                feature_dict[col] = row[col]
+
+        feature_rows.append(feature_dict)
+
+    features_df = pd.DataFrame(feature_rows)
+
+    print("Feature dataset shape:", features_df.shape)
+
+    features_df.to_csv(OUTPUT_DIR / "tox21_features.csv", index=False)
+
+    print("Tox21 features saved")
 
 
+# -------------------------------
+# MAIN
+# -------------------------------
 def main():
 
     process_esol()
