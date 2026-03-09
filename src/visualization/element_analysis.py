@@ -24,7 +24,7 @@ def analyze_elements():
 
     df = pd.read_csv(DATA_PATH)
 
-    # define toxic molecules
+    
     toxicity_columns = df.columns.drop("SMILES")
 
     df["toxicity_sum"] = df[toxicity_columns].sum(axis=1)
