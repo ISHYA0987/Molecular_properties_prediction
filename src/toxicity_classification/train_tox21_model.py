@@ -18,7 +18,7 @@ def train_model():
         "SR-ARE","SR-ATAD5","SR-HSE","SR-MMP","SR-p53"
     ]
 
-    # Remove rows with missing labels
+    
     df = df.dropna(subset=targets)
 
     X = df.drop(columns=targets + ["SMILES"], errors="ignore")

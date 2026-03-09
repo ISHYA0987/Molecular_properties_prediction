@@ -8,9 +8,7 @@ OUTPUT_DIR = Path("data/features")
 OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
 
 
-# -------------------------------
-# ESOL FEATURE GENERATION
-# -------------------------------
+
 def process_esol():
 
     print("Generating ESOL features...")
@@ -29,10 +27,6 @@ def process_esol():
     print("ESOL features created")
     print("Shape:", features.shape)
 
-
-# -------------------------------
-# AMES FEATURE GENERATION
-# -------------------------------
 def process_ames():
 
     print("Generating Ames features...")
@@ -51,17 +45,13 @@ def process_ames():
     print("Ames features created")
     print("Shape:", features.shape)
 
-
-# -------------------------------
-# TOX21 FEATURE GENERATION
-# -------------------------------
 def process_tox21():
 
     print("Generating Tox21 features...")
 
     df = pd.read_csv(DATA_DIR / "tox21_clean.csv")
 
-    # find correct smiles column
+   
     smiles_col = "SMILES" if "SMILES" in df.columns else "smiles"
 
     feature_rows = []
@@ -81,17 +71,17 @@ def process_tox21():
 
         feature_dict = {}
 
-        # add descriptors
+        
         feature_dict.update(desc)
 
-        # add fingerprints
+        
         for i, bit in enumerate(fp):
             feature_dict[f"fp_{i}"] = bit
 
-        # add SMILES
+       
         feature_dict["SMILES"] = smi
 
-        # add toxicity labels
+       
         for col in df.columns:
             if col != smiles_col:
                 feature_dict[col] = row[col]
@@ -107,9 +97,6 @@ def process_tox21():
     print("Tox21 features saved")
 
 
-# -------------------------------
-# MAIN
-# -------------------------------
 def main():
 
     process_esol()
