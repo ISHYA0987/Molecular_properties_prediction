@@ -4,7 +4,7 @@ from sklearn.metrics import roc_auc_score, roc_curve
 import joblib
 from pathlib import Path
 
-# Paths
+
 DATA_PATH = Path("data/features/tox21_features.csv")
 MODEL_PATH = Path("experiments/models/tox21_model.pkl")
 VIS_DIR = Path("visuals")
@@ -24,26 +24,24 @@ def evaluate_model():
         "SR-ARE","SR-ATAD5","SR-HSE","SR-MMP","SR-p53"
     ]
 
-    # Remove rows with missing label
+    
     df = df.dropna(subset=[target])
 
     print("Dataset shape after cleaning:", df.shape)
 
-    # Features
+   
     X = df.drop(columns=label_columns + ["SMILES"], errors="ignore")
 
     y = df[target]
 
-    # Load model
     model = joblib.load(MODEL_PATH)
 
-    # Predict probabilities
     probs = model.predict_proba(X)
 
-    # For MultiOutputClassifier take first task
+    
     toxicity_probs = probs[0][:, 1]
 
-    # ROC AUC
+    
     auc_score = roc_auc_score(y, toxicity_probs)
 
     print("ROC AUC:", auc_score)

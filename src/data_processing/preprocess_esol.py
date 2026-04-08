@@ -17,33 +17,32 @@ def preprocess_esol():
     valid = pd.read_csv(RAW_DIR / "valid_data.csv")
     test = pd.read_csv(RAW_DIR / "test_data.csv")
 
-    # Combine datasets
+  
     esol = pd.concat([train, valid, test], ignore_index=True)
 
     print("Total molecules:", esol.shape)
 
-    # Select columns
+   
     esol = esol[[
         "smiles",
         "measured log solubility in mols per litre"
     ]]
 
-    # Rename columns
+   
     esol = esol.rename(columns={
         "smiles": "SMILES",
         "measured log solubility in mols per litre": "logS"
     })
 
-    # Remove missing values
+    
     esol = esol.dropna()
 
-    # Validate SMILES
     esol = esol[esol["SMILES"].apply(is_valid_smiles)]
 
-    # Remove duplicates
+    
     esol = esol.drop_duplicates(subset="SMILES")
 
-    # Save dataset
+   
     esol.to_csv(PROCESSED_DIR / "esol_clean.csv", index=False)
 
     print("ESOL preprocessing completed")

@@ -17,7 +17,7 @@ def preprocess_tox21():
 
     print("Original shape:", tox21.shape)
 
-    # Select toxicity endpoints
+    
     tox21 = tox21[[
         "smiles",
         "NR-AR",
@@ -34,10 +34,10 @@ def preprocess_tox21():
         "SR-p53"
     ]]
 
-    # Rename column
+    
     tox21 = tox21.rename(columns={"smiles": "SMILES"})
 
-    # Remove rows where all targets are missing
+  
     tox21 = tox21.dropna(
         subset=[
             "NR-AR",
@@ -48,13 +48,13 @@ def preprocess_tox21():
         how="all"
     )
 
-    # Validate SMILES
+   
     tox21 = tox21[tox21["SMILES"].apply(is_valid_smiles)]
 
-    # Remove duplicates
+    
     tox21 = tox21.drop_duplicates(subset="SMILES")
 
-    # Save dataset
+   
     tox21.to_csv(PROCESSED_DIR / "tox21_clean.csv", index=False)
 
     print("Tox21 preprocessing completed")
