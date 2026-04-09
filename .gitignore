@@ -5,3 +5,10 @@ ENV/
 __pycache__/
 *.pyc 
 *.pyo 
+# Ignore model files
+experiments/models/*.pkl
+experiments/models/*.joblib
+
+# Optional
+__pycache__/
+venv/
