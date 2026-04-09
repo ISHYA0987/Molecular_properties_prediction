@@ -12,3 +12,6 @@ experiments/models/*.joblib
 # Optional
 __pycache__/
 venv/
+
+experiments/models/
+*.pkl
