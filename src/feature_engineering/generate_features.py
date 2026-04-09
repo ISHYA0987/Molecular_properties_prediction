@@ -2,7 +2,6 @@ import pandas as pd
 from pathlib import Path
 import numpy as np
 from rdkit import Chem
-
 from .rdkit_features import compute_descriptors, compute_fingerprint
 
 DATA_DIR = Path("data/processed")
@@ -11,7 +10,7 @@ OUTPUT_DIR = Path("data/features")
 OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
 
 
-# 🔥 Substructure alerts (important for toxicity)
+# 🔥 Substructure alerts
 def count_substructures(smiles):
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
@@ -26,7 +25,17 @@ def count_substructures(smiles):
     }
 
 
-# 🔥 CORE FEATURE GENERATOR (used everywhere)
+# 🔥 SAFE CLEAN FUNCTION
+def clean_feature_dict(feature_dict):
+    for k, v in feature_dict.items():
+        if v is None:
+            feature_dict[k] = 0
+        elif isinstance(v, float) and (np.isnan(v) or np.isinf(v)):
+            feature_dict[k] = 0
+    return feature_dict
+
+
+# 🔥 CORE FEATURE GENERATOR
 def build_feature_dict(smiles):
     desc = compute_descriptors(smiles)
     fp = compute_fingerprint(smiles)
@@ -40,12 +49,15 @@ def build_feature_dict(smiles):
     # Descriptors
     feature_dict.update(desc)
 
-    # Fingerprints
+    # Fingerprints (ensure fixed length)
     for i, bit in enumerate(fp):
-        feature_dict[f"fp_{i}"] = bit
+        feature_dict[f"fp_{i}"] = int(bit)
 
-    # Substructure alerts
+    # Substructure features
     feature_dict.update(subs)
+
+    # 🔥 CLEAN EVERYTHING
+    feature_dict = clean_feature_dict(feature_dict)
 
     return feature_dict
 
@@ -65,12 +77,15 @@ def process_esol():
         if features is None:
             continue
 
-        features["logS"] = row["logS"]
+        features["logS"] = float(row["logS"])
         features["SMILES"] = smi
 
         feature_rows.append(features)
 
     features_df = pd.DataFrame(feature_rows)
+
+    # 🔥 FINAL CLEAN
+    features_df = features_df.fillna(0)
 
     features_df.to_csv(OUTPUT_DIR / "esol_features.csv", index=False)
 
@@ -78,7 +93,7 @@ def process_esol():
     print("Shape:", features_df.shape)
 
 
-# ✅ AMES (GENOTOXICITY)
+# ✅ AMES
 def process_ames():
     print("Generating Ames features...")
 
@@ -93,12 +108,14 @@ def process_ames():
         if features is None:
             continue
 
-        features["genotoxicity"] = row["genotoxicity"]
+        features["genotoxicity"] = int(row["genotoxicity"])
         features["SMILES"] = smi
 
         feature_rows.append(features)
 
     features_df = pd.DataFrame(feature_rows)
+
+    features_df = features_df.fillna(0)
 
     features_df.to_csv(OUTPUT_DIR / "ames_features.csv", index=False)
 
@@ -126,10 +143,8 @@ def process_tox21():
         if features is None:
             continue
 
-        # Add SMILES
         features["SMILES"] = smi
 
-        # Add all labels
         for col in df.columns:
             if col != smiles_col:
                 features[col] = row[col]
@@ -138,15 +153,24 @@ def process_tox21():
 
     features_df = pd.DataFrame(feature_rows)
 
+    features_df = features_df.fillna(0)
+
     features_df.to_csv(OUTPUT_DIR / "tox21_features.csv", index=False)
 
     print("Tox21 features saved")
     print("Shape:", features_df.shape)
 
 
-# 🔥 Used in Flask (prediction)
+# 🔥 Used in Flask
 def generate_features(smiles):
     features = build_feature_dict(smiles)
+
+    if features is None:
+        return None
+
+    # Extra safety
+    features = clean_feature_dict(features)
+
     return features
 
 

@@ -6,7 +6,8 @@ import joblib
 
 DATA_PATH = Path("data/features/tox21_features.csv")
 MODEL_PATH = Path("experiments/models/tox21_model.pkl")
-
+MODEL_DIR = Path("experiments/models")
+MODEL_DIR.mkdir(parents=True, exist_ok=True)
 
 def train_model():
 
@@ -23,7 +24,7 @@ def train_model():
 
     X = df.drop(columns=targets + ["SMILES"], errors="ignore")
     y = df[targets]
-
+    joblib.dump(list(X.columns.tolist()), MODEL_DIR/ "tox21_features.pkl")
     print("Dataset after removing NaN:", df.shape)
 
     X_train, X_test, y_train, y_test = train_test_split(
@@ -38,7 +39,7 @@ def train_model():
     )
 
     print("Training model...")
-
+   
     model.fit(X_train, y_train)
 
     joblib.dump(model, MODEL_PATH)

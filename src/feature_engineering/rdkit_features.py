@@ -1,12 +1,19 @@
-from rdkit.Chem import AllChem
+from rdkit import Chem
+from rdkit.Chem import Descriptors, rdMolDescriptors, rdFingerprintGenerator
 import numpy as np
 import pandas as pd
-from rdkit import Chem
-from rdkit.Chem import Descriptors
-from rdkit.Chem import rdMolDescriptors
 
 
-# 🔥 Improved descriptors (CRITICAL FIX)
+# 🔥 SAFE VALUE HELPER
+def safe_value(val):
+    if val is None:
+        return 0.0
+    if isinstance(val, float) and (np.isnan(val) or np.isinf(val)):
+        return 0.0
+    return float(val)
+
+
+# 🔥 Improved descriptors (robust + clean)
 def compute_descriptors(smiles):
 
     mol = Chem.MolFromSmiles(smiles)
@@ -16,23 +23,27 @@ def compute_descriptors(smiles):
 
     desc = {}
 
-    # Basic physicochemical
-    desc["MolWt"] = Descriptors.MolWt(mol)
-    desc["LogP"] = Descriptors.MolLogP(mol)
-    desc["HBD"] = Descriptors.NumHDonors(mol)
-    desc["HBA"] = Descriptors.NumHAcceptors(mol)
-    desc["TPSA"] = Descriptors.TPSA(mol)
-    desc["RotatableBonds"] = Descriptors.NumRotatableBonds(mol)
+    try:
+        # Basic physicochemical
+        desc["MolWt"] = safe_value(Descriptors.MolWt(mol))
+        desc["LogP"] = safe_value(Descriptors.MolLogP(mol))
+        desc["HBD"] = safe_value(Descriptors.NumHDonors(mol))
+        desc["HBA"] = safe_value(Descriptors.NumHAcceptors(mol))
+        desc["TPSA"] = safe_value(Descriptors.TPSA(mol))
+        desc["RotatableBonds"] = safe_value(Descriptors.NumRotatableBonds(mol))
 
-    # 🔥 CRITICAL (adds structural awareness)
-    desc["NumAromaticRings"] = rdMolDescriptors.CalcNumAromaticRings(mol)
-    desc["RingCount"] = rdMolDescriptors.CalcNumRings(mol)
-    desc["FractionCSP3"] = Descriptors.FractionCSP3(mol)
+        # Structural features
+        desc["NumAromaticRings"] = safe_value(rdMolDescriptors.CalcNumAromaticRings(mol))
+        desc["RingCount"] = safe_value(rdMolDescriptors.CalcNumRings(mol))
+        desc["FractionCSP3"] = safe_value(Descriptors.FractionCSP3(mol))
+
+    except Exception:
+        return None
 
     return desc
 
 
-# 🔥 Improved fingerprint (2048 bits)
+# 🔥 NEW Morgan fingerprint (modern API)
 def compute_fingerprint(smiles):
 
     mol = Chem.MolFromSmiles(smiles)
@@ -40,16 +51,24 @@ def compute_fingerprint(smiles):
     if mol is None:
         return None
 
-    fp = rdMolDescriptors.GetMorganFingerprintAsBitVect(
-        mol,
-        radius=2,
-        nBits=2048   # 🔥 upgraded from 1024
-    )
+    try:
+        generator = rdFingerprintGenerator.GetMorganGenerator(
+            radius=2,
+            fpSize=2048
+        )
 
-    return list(fp)
+        fp = generator.GetFingerprint(mol)
+
+        # Convert to clean list (0/1)
+        arr = [int(x) for x in fp]
+
+        return arr
+
+    except Exception:
+        return None
 
 
-# 🔥 Unified featurization (consistent with pipeline)
+# 🔥 Unified featurization (batch mode)
 def featurize_smiles(smiles_list):
 
     feature_rows = []
@@ -67,12 +86,16 @@ def featurize_smiles(smiles_list):
         # Add descriptors
         feature_dict.update(desc)
 
-        # Add fingerprint bits with names
+        # Add fingerprint bits
         for i, bit in enumerate(fp):
             feature_dict[f"fp_{i}"] = bit
 
         feature_rows.append(feature_dict)
 
     features = pd.DataFrame(feature_rows)
+
+    # 🔥 FINAL CLEAN (IMPORTANT)
+    features = features.replace([np.inf, -np.inf], np.nan)
+    features = features.fillna(0)
 
     return features
