@@ -18,26 +18,23 @@ def train_model():
 
     df = pd.read_csv(DATA_PATH)
 
-    # 🔥 Clean data
     df = df.replace([np.inf, -np.inf], np.nan)
     df = df.fillna(0)
     df = df.drop_duplicates()
 
-    # Features and target
     X = df.drop(columns=["logS", "SMILES"], errors="ignore")
     y = df["logS"]
 
-    # 🔥 Save feature columns (VERY IMPORTANT)
     joblib.dump(list(X.columns), MODEL_DIR / "esol_features.pkl")
 
-    # Train-test split
+  
     X_train, X_test, y_train, y_test = train_test_split(
         X, y, test_size=0.2, random_state=42
     )
 
     print("Training model...")
 
-    # 🔥 Improved model
+
     model = RandomForestRegressor(
         n_estimators=300,
         max_depth=None,
@@ -49,14 +46,13 @@ def train_model():
 
     model.fit(X_train, y_train)
 
-    # Predictions
+  
     predictions = model.predict(X_test)
 
-    # RMSE
     rmse = np.sqrt(mean_squared_error(y_test, predictions))
     print("Test RMSE:", rmse)
 
-    # 🔥 Cross-validation (more reliable)
+  
     cv_scores = cross_val_score(
         model, X, y,
         scoring="neg_root_mean_squared_error",
@@ -64,11 +60,9 @@ def train_model():
     )
     print("CV RMSE:", -cv_scores.mean())
 
-    # 🔥 Feature importance (debugging)
     importances = pd.Series(model.feature_importances_, index=X.columns)
     print("\nTop Features:\n", importances.sort_values(ascending=False).head(10))
 
-    # Save model
     joblib.dump(model, MODEL_DIR / "esol_model.pkl")
 
     print("Model saved successfully!")

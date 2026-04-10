@@ -4,7 +4,6 @@ import numpy as np
 import pandas as pd
 
 
-# 🔥 SAFE VALUE HELPER
 def safe_value(val):
     if val is None:
         return 0.0
@@ -13,7 +12,6 @@ def safe_value(val):
     return float(val)
 
 
-# 🔥 Improved descriptors (robust + clean)
 def compute_descriptors(smiles):
 
     mol = Chem.MolFromSmiles(smiles)
@@ -24,7 +22,7 @@ def compute_descriptors(smiles):
     desc = {}
 
     try:
-        # Basic physicochemical
+   
         desc["MolWt"] = safe_value(Descriptors.MolWt(mol))
         desc["LogP"] = safe_value(Descriptors.MolLogP(mol))
         desc["HBD"] = safe_value(Descriptors.NumHDonors(mol))
@@ -43,7 +41,6 @@ def compute_descriptors(smiles):
     return desc
 
 
-# 🔥 NEW Morgan fingerprint (modern API)
 def compute_fingerprint(smiles):
 
     mol = Chem.MolFromSmiles(smiles)
@@ -68,7 +65,7 @@ def compute_fingerprint(smiles):
         return None
 
 
-# 🔥 Unified featurization (batch mode)
+
 def featurize_smiles(smiles_list):
 
     feature_rows = []
@@ -83,10 +80,9 @@ def featurize_smiles(smiles_list):
 
         feature_dict = {}
 
-        # Add descriptors
+    
         feature_dict.update(desc)
 
-        # Add fingerprint bits
         for i, bit in enumerate(fp):
             feature_dict[f"fp_{i}"] = bit
 
@@ -94,7 +90,7 @@ def featurize_smiles(smiles_list):
 
     features = pd.DataFrame(feature_rows)
 
-    # 🔥 FINAL CLEAN (IMPORTANT)
+
     features = features.replace([np.inf, -np.inf], np.nan)
     features = features.fillna(0)
 

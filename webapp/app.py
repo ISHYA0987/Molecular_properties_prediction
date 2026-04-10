@@ -18,14 +18,13 @@ def index():
 
         smiles = request.form.get("smiles", "").strip()
 
-        # 🔥 Input validation
+      
         if not smiles:
             return render_template("index.html", error="Please enter a SMILES string.")
 
         try:
             result = predict_from_smiles(smiles)
 
-            # 🔥 Handle prediction errors
             if result is None:
                 return render_template("index.html", error="Prediction failed.")
 
@@ -35,7 +34,7 @@ def index():
             return render_template("result.html", result=result)
 
         except Exception as e:
-            # 🔥 Debug print (check terminal)
+           
             print("ERROR:", str(e))
 
             return render_template(
@@ -46,6 +45,6 @@ def index():
     return render_template("index.html")
 
 
-# 🔥 Run server
+
 if __name__ == "__main__":
     app.run(debug=True, host="0.0.0.0", port=5000)
